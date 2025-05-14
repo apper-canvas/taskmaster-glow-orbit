@@ -8,7 +8,7 @@ import CalendarView from './CalendarView';
 // Icons
 const ListIcon = getIcon('List');
 const CalendarIcon = getIcon('Calendar');
-const PlusIcon = getIcon('Plus');
+        <h2 className="text-2xl font-bold text-surface-800 dark:text-surface-100">Todoodo</h2>
 const TrashIcon = getIcon('Trash');
 const EditIcon = getIcon('Edit');
 const ClockIcon = getIcon('Clock');
