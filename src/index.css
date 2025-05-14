@@ -66,4 +66,94 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+  
+  /* Calendar styles */
+  .rbc-calendar {
+    @apply font-sans text-surface-800 dark:text-surface-100 rounded-xl overflow-hidden;
+  }
+  
+  .rbc-toolbar {
+    @apply bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700 p-2 mb-0 flex flex-wrap justify-between items-center;
+  }
+  
+  .rbc-toolbar button {
+    @apply bg-white dark:bg-surface-700 border border-surface-300 dark:border-surface-600 shadow-sm rounded py-1 px-2 text-sm font-medium text-surface-700 dark:text-surface-300;
+  }
+  
+  .rbc-toolbar button:hover {
+    @apply bg-surface-50 dark:bg-surface-600;
+  }
+  
+  .rbc-toolbar button.rbc-active {
+    @apply bg-primary/10 dark:bg-primary/20 text-primary border-primary;
+  }
+  
+  .rbc-month-view, .rbc-time-view {
+    @apply border-surface-200 dark:border-surface-700;
+  }
+  
+  .rbc-header {
+    @apply bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700 py-2 font-medium;
+  }
+  
+  .rbc-day-bg {
+    @apply bg-white dark:bg-surface-800;
+  }
+  
+  .rbc-off-range-bg {
+    @apply bg-surface-100 dark:bg-surface-900/50;
+  }
+  
+  .rbc-today {
+    @apply bg-blue-50 dark:bg-blue-900/20;
+  }
+  
+  .rbc-event {
+    @apply rounded px-2 py-1 text-xs font-medium border-none;
+  }
+  
+  /* Priority colors for events */
+  .event-high-priority {
+    @apply bg-red-100 dark:bg-red-900/60 text-red-800 dark:text-red-200 border-l-4 border-red-500;
+  }
+  
+  .event-medium-priority {
+    @apply bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border-l-4 border-amber-500;
+  }
+  
+  .event-low-priority {
+    @apply bg-green-100 dark:bg-green-900/60 text-green-800 dark:text-green-200 border-l-4 border-green-500;
+  }
+  
+  .event-completed {
+    @apply bg-surface-100 dark:bg-surface-700/60 text-surface-500 dark:text-surface-400 border-l-4 border-surface-400 line-through opacity-70;
+  }
+  
+  .rbc-date-cell {
+    @apply text-right p-1 text-sm;
+  }
+  
+  .rbc-time-content {
+    @apply border-surface-200 dark:border-surface-700;
+  }
+  
+  .rbc-time-header-content {
+    @apply border-surface-200 dark:border-surface-700;
+  }
+  
+  .rbc-timeslot-group {
+    @apply border-surface-200 dark:border-surface-700;
+  }
+  
+  .rbc-allday-cell {
+    @apply border-surface-200 dark:border-surface-700;
+  }
+  
+  .rbc-time-slot {
+    @apply border-surface-100 dark:border-surface-800;
+  }
+  
+  .rbc-current-time-indicator {
+    @apply bg-primary h-px;
+  }
 }

@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import getIcon from '../utils/iconUtils';
+import CalendarView from './CalendarView';
 
 // Icons
+const ListIcon = getIcon('List');
+const CalendarIcon = getIcon('Calendar');
 const PlusIcon = getIcon('Plus');
 const TrashIcon = getIcon('Trash');
 const EditIcon = getIcon('Edit');
@@ -14,7 +17,6 @@ const TimerIcon = getIcon('Timer');
 const XIcon = getIcon('X');
 const AlertCircleIcon = getIcon('AlertCircle');
 const FlagIcon = getIcon('Flag');
-const CalendarIcon = getIcon('Calendar');
 const SaveIcon = getIcon('Save');
 
 // Initial sample data
@@ -74,6 +76,7 @@ function MainFeature({ onTasksChange }) {
   });
   
   const [filterStatus, setFilterStatus] = useState('all');
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [taskForm, setTaskForm] = useState({
     id: '',
@@ -226,6 +229,18 @@ function MainFeature({ onTasksChange }) {
     toast.info("Task status updated");
   };
 
+  // Update task due date (used by calendar drag-and-drop)
+  const updateTaskDueDate = (taskId, newDate) => {
+    const updatedTasks = tasks.map(task => {
+      if (task.id === taskId) {
+        return { ...task, dueDate: newDate.toISOString(), updatedAt: new Date().toISOString() };
+      }
+      return task;
+    });
+    setTasks(updatedTasks);
+    toast.success("Task rescheduled successfully");
+  };
+
   // Delete task
   const deleteTask = (taskId) => {
     if (window.confirm('Are you sure you want to delete this task?')) {
@@ -253,18 +268,53 @@ function MainFeature({ onTasksChange }) {
     dueDate.setHours(23, 59, 59, 999); // End of day
     return dueDate < new Date();
   };
+  
+  // Toggle between list and calendar views
+  const toggleViewMode = (mode) => {
+    setViewMode(mode);
+  };
 
   return (
     <div className="rounded-2xl overflow-hidden bg-white dark:bg-surface-800 shadow-soft">
       <div className="border-b border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-bold text-surface-800 dark:text-surface-100">Task Management</h2>
+          <h2 className="text-xl font-bold text-surface-800 dark:text-surface-100">
+            {viewMode === 'list' ? 'Task Management' : 'Task Calendar'}
+          </h2>
           <p className="text-surface-500 dark:text-surface-400 text-sm mt-1">
-            Manage and organize your tasks efficiently
+            {viewMode === 'list' 
+              ? 'Manage and organize your tasks efficiently' 
+              : 'Visualize and reschedule your tasks in a calendar'}
           </p>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          {/* View Mode Toggle */}
+          <div className="flex rounded-lg overflow-hidden border border-surface-300 dark:border-surface-600">
+            <button
+              onClick={() => toggleViewMode('list')}
+              className={`flex items-center gap-1 py-2 px-3 text-sm font-medium ${
+                viewMode === 'list'
+                  ? 'bg-primary text-white'
+                  : 'bg-white dark:bg-surface-700 text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-600'
+              }`}
+            >
+              <ListIcon className="w-4 h-4" />
+              List
+            </button>
+            <button
+              onClick={() => toggleViewMode('calendar')}
+              className={`flex items-center gap-1 py-2 px-3 text-sm font-medium ${
+                viewMode === 'calendar'
+                  ? 'bg-primary text-white'
+                  : 'bg-white dark:bg-surface-700 text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-600'
+              }`}
+            >
+              <CalendarIcon className="w-4 h-4" />
+              Calendar
+            </button>
+          </div>
+          
           <div className="relative w-full sm:w-auto">
             <select
               value={filterStatus}
@@ -290,7 +340,18 @@ function MainFeature({ onTasksChange }) {
       </div>
       
       <div className="p-4 sm:p-6">
-        {filteredTasks.length === 0 ? (
+        {/* Calendar View */}
+        {viewMode === 'calendar' && (
+          <CalendarView 
+            tasks={filteredTasks} 
+            onSelectTask={openModal} 
+            onUpdateTaskDueDate={updateTaskDueDate}
+            priorityConfig={priorityConfig}
+          />
+        )}
+        
+        {/* List View */}
+        {viewMode === 'list' && filteredTasks.length === 0 ? (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -308,7 +369,7 @@ function MainFeature({ onTasksChange }) {
                 : `Change the filter or add a new task to get started.`}
             </p>
           </motion.div>
-        ) : (
+        ) : viewMode === 'list' && (
           <AnimatePresence mode="popLayout">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredTasks.map((task) => {
