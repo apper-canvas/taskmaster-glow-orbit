@@ -1,9 +1,17 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
+import { useSelector, useDispatch } from 'react-redux';
 import getIcon from '../utils/iconUtils';
 import CalendarView from './CalendarView';
+import { 
+  fetchTasksSuccess, 
+  fetchTasksFailure
+} from '../store/taskSlice';
+import { 
+  fetchTasks, createTask, updateTask, deleteTask 
+} from '../services/taskService';
 
 // Icons
 const ListIcon = getIcon('List');
@@ -19,37 +27,7 @@ const XIcon = getIcon('X');
 const AlertCircleIcon = getIcon('AlertCircle');
 const FlagIcon = getIcon('Flag');
 const SaveIcon = getIcon('Save');
-
-// Initial sample data
-const initialTasks = [
-  {
-    id: '1',
-    title: 'Complete project proposal',
-    description: 'Draft the initial proposal for the new client project',
-    priority: 'high',
-    status: 'pending',
-    dueDate: new Date(new Date().setDate(new Date().getDate() + 2)).toISOString(),
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    title: 'Schedule team meeting',
-    description: 'Set up weekly sync with the development team',
-    priority: 'medium',
-    status: 'completed',
-    dueDate: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(),
-    createdAt: new Date(new Date().setDate(new Date().getDate() - 3)).toISOString()
-  },
-  {
-    id: '3',
-    title: 'Review design mockups',
-    description: 'Check the latest UI designs and provide feedback',
-    priority: 'low',
-    status: 'pending',
-    dueDate: new Date(new Date().setDate(new Date().getDate() + 4)).toISOString(),
-    createdAt: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString()
-  }
-];
+const LoaderIcon = getIcon('Loader');
 
 // Priority colors
 const priorityConfig = {
@@ -71,10 +49,17 @@ const priorityConfig = {
 };
 
 function MainFeature({ onTasksChange }) {
-  const [tasks, setTasks] = useState(() => {
-    const savedTasks = localStorage.getItem('tasks');
-    return savedTasks ? JSON.parse(savedTasks) : initialTasks;
-  });
+  const dispatch = useDispatch();
+  const { tasks, loading, error } = useSelector(state => state.tasks);
+  
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [taskToDelete, setTaskToDelete] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [taskStatusUpdating, setTaskStatusUpdating] = useState(null);
+  
+  // Use redux state for tasks instead of local state
+  const [localLoading, setLocalLoading] = useState(false);
   
   const [filterStatus, setFilterStatus] = useState('all');
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
@@ -90,12 +75,6 @@ function MainFeature({ onTasksChange }) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [formErrors, setFormErrors] = useState({});
 
-  // Save tasks to localStorage
-  useEffect(() => {
-    localStorage.setItem('tasks', JSON.stringify(tasks));
-    if (onTasksChange) {
-      onTasksChange(tasks);
-    }
   }, [tasks, onTasksChange]);
 
   // Filter tasks based on status
@@ -170,36 +149,97 @@ function MainFeature({ onTasksChange }) {
     return Object.keys(errors).length === 0;
   };
 
+  // Refresh tasks from the backend
+  const refreshTasks = async () => {
+    try {
+      setLocalLoading(true);
+      const fetchedTasks = await fetchTasks();
+      dispatch(fetchTasksSuccess(fetchedTasks));
+      if (onTasksChange) {
+        onTasksChange(fetchedTasks);
+      }
+    } catch (error) {
+      dispatch(fetchTasksFailure(error.message));
+      toast.error("Failed to refresh tasks. Please try again.");
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) {
       toast.error("Please fix the form errors");
       return;
     }
-    
-    if (isEditMode) {
-      // Update existing task
-      const updatedTasks = tasks.map(task => 
-        task.id === taskForm.id ? { ...taskForm, updatedAt: new Date().toISOString() } : task
-      );
-      setTasks(updatedTasks);
-      toast.success("Task updated successfully!");
-    } else {
-      // Add new task
-      const newTask = {
-        ...taskForm,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
-        status: 'pending'
-      };
-      setTasks([...tasks, newTask]);
-      toast.success("Task added successfully!");
+
+    setSubmitting(true);
+    try {
+      if (isEditMode) {
+        // Update existing task
+        await updateTask(taskForm);
+        toast.success("Task updated successfully!");
+      } else {
+        // Add new task
+        await createTask({
+          ...taskForm,
+          status: 'pending'
+        });
+        toast.success("Task added successfully!");
+      }
+      
+      // Refresh tasks from backend
+      await refreshTasks();
+      closeModal();
+    } catch (error) {
+      console.error('Task operation failed:', error);
+      toast.error(error.message || "Operation failed. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
-    
-    closeModal();
   };
+  
+  // Confirm task deletion
+  const confirmDeleteTask = (task) => {
+    setTaskToDelete(task);
+    setDeleteModalOpen(true);
+  };
+  
+  // Delete task
+  const handleDeleteTask = async () => {
+    if (!taskToDelete) return;
+    
+    setDeletingId(taskToDelete.id);
+    try {
+      await deleteTask(taskToDelete.id);
+      toast.success("Task deleted successfully");
+      await refreshTasks();
+    } catch (error) {
+      console.error('Delete operation failed:', error);
+      toast.error("Failed to delete task. Please try again.");
+    } finally {
+      setDeletingId(null);
+      setTaskToDelete(null);
+      setDeleteModalOpen(false);
+    }
+  };
+  
+  // Cancel delete
+  const cancelDelete = () => {
+    setTaskToDelete(null);
+    setDeleteModalOpen(false);
+  };
+  
+  // Refresh tasks on component mount
+  useEffect(() => {
+    const loadTasks = async () => {
+      await refreshTasks();
+    };
+    
+    loadTasks();
+  }, []);
 
   // Handle form input changes
   const handleChange = (e) => {
@@ -213,44 +253,46 @@ function MainFeature({ onTasksChange }) {
   };
 
   // Toggle task completion
-  const toggleTaskStatus = (taskId) => {
-    const updatedTasks = tasks.map(task => {
-      if (task.id === taskId) {
-        const newStatus = task.status === 'completed' ? 'pending' : 'completed';
-        return { 
-          ...task, 
-          status: newStatus,
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return task;
-    });
-    
-    setTasks(updatedTasks);
-    toast.info("Task status updated");
-  };
-
-  // Update task due date (used by calendar drag-and-drop)
-  const updateTaskDueDate = (taskId, newDate) => {
-    const updatedTasks = tasks.map(task => {
-      if (task.id === taskId) {
-        return { ...task, dueDate: newDate.toISOString(), updatedAt: new Date().toISOString() };
-      }
-      return task;
-    });
-    setTasks(updatedTasks);
-    toast.success("Task rescheduled successfully");
-  };
-
-  // Delete task
-  const deleteTask = (taskId) => {
-    if (window.confirm('Are you sure you want to delete this task?')) {
-      const updatedTasks = tasks.filter(task => task.id !== taskId);
-      setTasks(updatedTasks);
-      toast.success("Task deleted successfully");
+  const toggleTaskStatus = async (taskId) => {
+    setTaskStatusUpdating(taskId);
+    try {
+      const taskToUpdate = tasks.find(task => task.id === taskId);
+      if (!taskToUpdate) return;
+      
+      const newStatus = taskToUpdate.status === 'completed' ? 'pending' : 'completed';
+      await updateTask({
+        ...taskToUpdate,
+        status: newStatus
+      });
+      
+      await refreshTasks();
+      toast.info("Task status updated");
+    } catch (error) {
+      toast.error("Failed to update task status");
+    } finally {
+      setTaskStatusUpdating(null);
     }
   };
 
+  // Update task due date (used by calendar drag-and-drop)
+  const updateTaskDueDate = async (taskId, newDate) => {
+    try {
+      const taskToUpdate = tasks.find(task => task.id === taskId);
+      if (!taskToUpdate) return;
+
+      await updateTask({
+        ...taskToUpdate,
+        dueDate: newDate.toISOString()
+      });
+
+      await refreshTasks();
+      toast.success("Task rescheduled successfully");
+    } catch (error) {
+      toast.error("Failed to reschedule task");
+    });
+  };
+
+  // Delete task
   // Format date
   const formatDate = (dateString) => {
     try {
@@ -326,6 +368,7 @@ function MainFeature({ onTasksChange }) {
               <option value="pending">Pending</option>
               <option value="completed">Completed</option>
             </select>
+                {(loading || localLoading) && <div className="flex justify-center py-4"><LoaderIcon className="w-8 h-8 animate-spin text-primary" /></div>}
           </div>
           
           <motion.button
@@ -398,8 +441,13 @@ function MainFeature({ onTasksChange }) {
                                 : 'border-2 border-surface-400 dark:border-surface-500'
                             }`}
                             aria-label={task.status === 'completed' ? 'Mark as incomplete' : 'Mark as complete'}
+                            disabled={taskStatusUpdating === task.id}
                           >
-                            {task.status === 'completed' && <CheckIcon className="w-3 h-3" />}
+                            {taskStatusUpdating === task.id ? (
+                              <div className="w-3 h-3 border-2 border-t-transparent border-surface-300 rounded-full animate-spin"></div>
+                            ) : (
+                              task.status === 'completed' && <CheckIcon className="w-3 h-3" />
+                            )}
                           </button>
                           
                           <h3 className={`font-medium ${priorityStyle.text} ${
@@ -421,13 +469,14 @@ function MainFeature({ onTasksChange }) {
                           </motion.button>
                           
                           <motion.button
-                            onClick={() => deleteTask(task.id)}
+                            onClick={() => confirmDeleteTask(task)}
                             className="text-surface-500 hover:text-red-500 dark:text-surface-400 dark:hover:text-red-400 p-1"
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             aria-label="Delete task"
+                            disabled={deletingId === task.id}
                           >
-                            <TrashIcon className="w-4 h-4" />
+                            {deletingId === task.id ? <LoaderIcon className="w-4 h-4 animate-spin" /> : <TrashIcon className="w-4 h-4" />}
                           </motion.button>
                         </div>
                       </div>
@@ -611,11 +660,12 @@ function MainFeature({ onTasksChange }) {
                   <motion.button
                     type="submit"
                     className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors"
+                    disabled={submitting}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <SaveIcon className="w-4 h-4" />
-                    {isEditMode ? 'Update Task' : 'Add Task'}
+                    {submitting ? <LoaderIcon className="w-4 h-4 animate-spin" /> : <SaveIcon className="w-4 h-4" />}
+                    {submitting ? 'Saving...' : isEditMode ? 'Update Task' : 'Add Task'}
                   </motion.button>
                 </div>
               </form>
@@ -624,6 +674,49 @@ function MainFeature({ onTasksChange }) {
         )}
       </AnimatePresence>
     </div>
+    
+    {/* Delete Confirmation Modal */}
+    <AnimatePresence>
+      {deleteModalOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4"
+          onClick={cancelDelete}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ type: 'spring', damping: 25 }}
+            className="bg-white dark:bg-surface-800 rounded-xl shadow-xl max-w-md w-full mx-auto p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold mb-2 text-surface-800 dark:text-surface-100">Confirm Deletion</h3>
+            <p className="text-surface-600 dark:text-surface-400 mb-4">
+              Are you sure you want to delete the task "{taskToDelete?.title}"? This action cannot be undone.
+            </p>
+            
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 border border-surface-300 dark:border-surface-600 rounded-lg text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteTask}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+              >
+                {deletingId ? <LoaderIcon className="w-4 h-4 animate-spin" /> : <TrashIcon className="w-4 h-4" />}
+                {deletingId ? 'Deleting...' : 'Delete Task'}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
