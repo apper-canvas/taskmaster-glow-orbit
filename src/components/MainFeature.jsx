@@ -665,7 +665,6 @@ function MainFeature({ onTasksChange }) {
         )}
       </AnimatePresence>
     </div>
-    
     {/* Delete Confirmation Modal */}
     <AnimatePresence>
       {deleteModalOpen && (
