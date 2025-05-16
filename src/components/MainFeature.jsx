@@ -24,7 +24,6 @@ const TimerIcon = getIcon('Timer');
 const XIcon = getIcon('X');
 const AlertCircleIcon = getIcon('AlertCircle');
 const FlagIcon = getIcon('Flag');
-const FlagIcon = getIcon('Flag');
 const SaveIcon = getIcon('Save');
 
 // Clipboard icon for empty state
