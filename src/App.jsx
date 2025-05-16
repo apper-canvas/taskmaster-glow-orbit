@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import { ToastContainer, toast } from 'react-toastify';
+import { motion } from 'framer-motion';
 import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import { setUser, clearUser } from './store/userSlice';
@@ -111,7 +111,6 @@ function App() {
       },
       onError: function(error) {
         console.error("Authentication failed:", error);
-        toast.error("Authentication failed. Please try again.");
       }
     });
     
@@ -131,10 +130,8 @@ function App() {
         await ApperUI.logout();
         dispatch(clearUser());
         navigate('/login');
-        toast.success("You have been logged out successfully");
       } catch (error) {
         console.error("Logout failed:", error);
-        toast.error("Logout failed. Please try again.");
       }
     }
   };
@@ -174,20 +171,6 @@ function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      
-      <ToastContainer
-        position="bottom-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme={darkMode ? "dark" : "light"}
-        toastClassName="rounded-xl shadow-soft"
-      />
     </div>
     </AuthContext.Provider>
   );

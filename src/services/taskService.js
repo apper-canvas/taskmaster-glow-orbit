@@ -1,5 +1,3 @@
-import { toast } from 'react-toastify';
-
 // Table name from provided schema
 const TABLE_NAME = 'task27';
 
@@ -85,7 +83,6 @@ export const fetchTasks = async () => {
     return response.data.map(mapTaskFromBackend);
   } catch (error) {
     console.error("Error fetching tasks:", error);
-    toast.error("Failed to load tasks. Please try again later.");
     throw error;
   }
 };
@@ -119,7 +116,6 @@ export const fetchTaskById = async (taskId) => {
     return mapTaskFromBackend(response.data);
   } catch (error) {
     console.error(`Error fetching task with ID ${taskId}:`, error);
-    toast.error("Failed to load task details. Please try again later.");
     throw error;
   }
 };
@@ -155,7 +151,6 @@ export const createTask = async (taskData) => {
     return mapTaskFromBackend(createdTask.data);
   } catch (error) {
     console.error("Error creating task:", error);
-    toast.error(error.message || "Failed to create task. Please try again.");
     throw error;
   }
 };
@@ -191,7 +186,6 @@ export const updateTask = async (taskData) => {
     return mapTaskFromBackend(updatedTask.data);
   } catch (error) {
     console.error("Error updating task:", error);
-    toast.error(error.message || "Failed to update task. Please try again.");
     throw error;
   }
 };
@@ -216,7 +210,6 @@ export const deleteTask = async (taskId) => {
     return true;
   } catch (error) {
     console.error(`Error deleting task with ID ${taskId}:`, error);
-    toast.error("Failed to delete task. Please try again later.");
     throw error;
   }
 };

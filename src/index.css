@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import 'react-toastify/dist/ReactToastify.css';
-
 @layer base {
   html {
     @apply text-surface-800 scroll-smooth;

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 import { useSelector, useDispatch } from 'react-redux';
 import getIcon from '../utils/iconUtils';
@@ -160,7 +159,6 @@ function MainFeature({ onTasksChange }) {
       }
     } catch (error) {
       dispatch(fetchTasksFailure(error.message));
-      toast.error("Failed to refresh tasks. Please try again.");
     } finally {
       setLocalLoading(false);
     }
@@ -171,7 +169,6 @@ function MainFeature({ onTasksChange }) {
     e.preventDefault();
     
     if (!validateForm()) {
-      toast.error("Please fix the form errors");
       return;
     }
 
@@ -180,14 +177,12 @@ function MainFeature({ onTasksChange }) {
       if (isEditMode) {
         // Update existing task
         await updateTask(taskForm);
-        toast.success("Task updated successfully!");
       } else {
         // Add new task
         await createTask({
           ...taskForm,
           status: 'pending'
         });
-        toast.success("Task added successfully!");
       }
       
       // Refresh tasks from backend
@@ -195,7 +190,6 @@ function MainFeature({ onTasksChange }) {
       closeModal();
     } catch (error) {
       console.error('Task operation failed:', error);
-      toast.error(error.message || "Operation failed. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -214,11 +208,9 @@ function MainFeature({ onTasksChange }) {
     setDeletingId(taskToDelete.id);
     try {
       await deleteTask(taskToDelete.id);
-      toast.success("Task deleted successfully");
       await refreshTasks();
     } catch (error) {
       console.error('Delete operation failed:', error);
-      toast.error("Failed to delete task. Please try again.");
     } finally {
       setDeletingId(null);
       setTaskToDelete(null);
@@ -266,10 +258,8 @@ function MainFeature({ onTasksChange }) {
       });
       
       await refreshTasks();
-      toast.info("Task status updated");
     } catch (error) {
-      toast.error("Failed to update task status");
-    } finally {
+    } finally { 
       setTaskStatusUpdating(null);
     }
   };
@@ -286,10 +276,8 @@ function MainFeature({ onTasksChange }) {
       });
 
       await refreshTasks();
-      toast.success("Task rescheduled successfully");
     } catch (error) {
-      toast.error("Failed to reschedule task");
-    });
+    }
   };
 
   // Delete task

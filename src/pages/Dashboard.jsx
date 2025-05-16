@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'react-toastify';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import getIcon from '../utils/iconUtils';
@@ -47,7 +46,6 @@ function Dashboard() {
         setIsLoaded(true);
       } catch (error) {
         dispatch(fetchTasksFailure(error.message));
-        toast.error("Failed to load tasks. Please try again.");
       }
     };
     
@@ -75,7 +73,6 @@ function Dashboard() {
   
   const handleTasksChange = (updatedTasks) => {
     updateStats(updatedTasks);
-    toast.success("Tasks updated successfully");
   };
 
   const handleLogout = async () => {
