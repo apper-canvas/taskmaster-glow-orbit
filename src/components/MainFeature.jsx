@@ -73,8 +73,12 @@ function MainFeature({ onTasksChange }) {
   });
   const [isEditMode, setIsEditMode] = useState(false);
   const [formErrors, setFormErrors] = useState({});
-
+  
+  // Notify parent component when tasks change
+  useEffect(() => {
+    if (onTasksChange) onTasksChange(tasks);
   }, [tasks, onTasksChange]);
+
 
   // Filter tasks based on status
   const filteredTasks = tasks.filter(task => {
