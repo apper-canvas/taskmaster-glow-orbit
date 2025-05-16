@@ -15,7 +15,6 @@ import {
 // Icons
 const ListIcon = getIcon('List');
 const CalendarIcon = getIcon('Calendar');
-        <h2 className="text-2xl font-bold text-surface-800 dark:text-surface-100">Todoodo</h2>
 const PlusIcon = getIcon('Plus');
 const TrashIcon = getIcon('Trash');
 const EditIcon = getIcon('Edit');
